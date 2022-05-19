@@ -61,19 +61,24 @@ builder.Services.AddHttpContextAccessor();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+//if (app.Environment.IsDevelopment())
+//{
+//    app.UseSwagger();
+//    app.UseSwaggerUI();
+//}
 
 app.UseSwagger();
-app.UseHttpsRedirection();
+app.UseSwaggerUI();
+//app.UseHttpsRedirection();
 
 app.UseAuthentication();
 
 app.UseAuthorization();
 
 app.MapControllers();
+
+//app.use = ("http://192.168.88.6:6666", "https://192.168.88.6:6669");
+app.Urls.Add("http://26.36.84.33:5163/");
+//app.Urls.Add("https://26.36.84.33:7163/");
 
 app.Run();

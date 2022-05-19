@@ -18,7 +18,7 @@ namespace stud_do.API.Controllers
         }
 
         // TODO: getroomS
-        [HttpGet]
+        [HttpGet("get-all")]
         public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> GetRoom()
         {
             var result = await _roomService.GetRoomsAsync();
@@ -26,7 +26,7 @@ namespace stud_do.API.Controllers
         }
 
         // TODO: not a List
-        [HttpGet("{roomId}")]
+        [HttpGet("get/{roomId}")]
         public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> GetRoom(int roomId)
         {
             var result = await _roomService.GetRoomAsync(roomId);
@@ -47,21 +47,21 @@ namespace stud_do.API.Controllers
             return Ok(result);
         }
 
-        [HttpDelete("{roomId}")]
+        [HttpDelete("delete/{roomId}")]
         public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> DeleteRoom(int roomId)
         {
             var result = await _roomService.DeleteRoom(roomId);
             return Ok(result);
         }
 
-        [HttpPost("{roomName}")]
+        [HttpPost("create/{roomName}")]
         public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> AddRoom(string roomName)
         {
             var result = await _roomService.AddRoomAsync(roomName);
             return Ok(result);
         }
 
-        [HttpPut]
+        [HttpPut("update")]
         public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> UpdateRoom(Room room)
         {
             var result = await _roomService.UpdateRoomAsync(room);
