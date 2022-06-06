@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using stud_do.API.Services;
 using stud_do.API.Services.AuthService;
@@ -6,6 +7,7 @@ using System.Security.Claims;
 
 namespace stud_do.API.Controllers
 {
+    [EnableCors("_myAllowSpecificOrigins")]
     [Route("api/[controller]")]
     [ApiController]
     public class AuthController : ControllerBase

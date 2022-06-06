@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using stud_do.API.Model.DTOs.User;
 using stud_do.API.Services;
@@ -6,6 +7,7 @@ using stud_do.API.Services.UserService;
 
 namespace stud_do.API.Controllers
 {
+    [EnableCors("_myAllowSpecificOrigins")]
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]

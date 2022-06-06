@@ -1,6 +1,7 @@
 global using Microsoft.EntityFrameworkCore;
 global using stud_do.API.Model;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using stud_do.API.Services.AuthService;
@@ -11,6 +12,8 @@ using stud_do.API.Services.ScheduleService;
 using stud_do.API.Services.UserService;
 using System.Text;
 
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -19,6 +22,18 @@ builder.Services.AddDbContext<DataContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
+
+var corsBuilder = new CorsPolicyBuilder();
+corsBuilder.AllowAnyHeader();
+corsBuilder.AllowAnyMethod();
+corsBuilder.AllowAnyOrigin(); 
+//corsBuilder.AllowCredentials();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(MyAllowSpecificOrigins, corsBuilder.Build());
+});
+
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -60,25 +75,15 @@ builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-//{
-//    app.UseSwagger();
-//    app.UseSwaggerUI();
-//}
-
 app.UseSwagger();
 app.UseSwaggerUI();
-//app.UseHttpsRedirection();
+
+app.UseRouting();
+app.UseCors(MyAllowSpecificOrigins);
 
 app.UseAuthentication();
-
 app.UseAuthorization();
 
 app.MapControllers();
-
-//app.use = ("http://192.168.88.6:6666", "https://192.168.88.6:6669");
-app.Urls.Add("http://26.36.84.33:5163/");
-//app.Urls.Add("https://26.36.84.33:7163/");
 
 app.Run();
