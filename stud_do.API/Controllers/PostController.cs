@@ -19,38 +19,38 @@ namespace stud_do.API.Controllers
             _postService = postService;
         }
 
-        [HttpGet("get-all/{roomId}")]
+        [HttpGet("get-all/room={roomId}")]
         public async Task<ActionResult<ServiceResponse<List<PostOutput>>>> GetPosts(int roomId)
         {
             var result = await _postService.GetPostsAsync(roomId);
             return Ok(result);
         }
 
-        [HttpGet("get/{postId}")]
+        [HttpGet("get/post={postId}")]
         public async Task<ActionResult<ServiceResponse<List<PostOutput>>>> GetPost(int postId)
         {
             var result = await _postService.GetPostAsync(postId);
             return Ok(result);
         }
 
-        [HttpDelete("delete/{postId}")]
+        [HttpPost("delete/post={postId}")]
         public async Task<ActionResult<ServiceResponse<List<PostOutput>>>> DeletePost(int postId)
         {
             var result = await _postService.DeletePostAsync(postId);
             return Ok(result);
         }
 
-        [HttpPost("create")]
-        public async Task<ActionResult<ServiceResponse<List<PostOutput>>>> AddPost(PostInput post)
+        [HttpPost("create/room={roomId}")]
+        public async Task<ActionResult<ServiceResponse<List<PostOutput>>>> AddPost(PostInput post, int roomId)
         {
-            var result = await _postService.AddPostAsync(post);
+            var result = await _postService.AddPostAsync(post, roomId);
             return Ok(result);
         }
 
-        [HttpPut("update")]
-        public async Task<ActionResult<ServiceResponse<List<PostOutput>>>> UpdatePost(Post post)
+        [HttpPost("update/post={postId}")]
+        public async Task<ActionResult<ServiceResponse<List<PostOutput>>>> UpdatePost(PostInput post, int postId)
         {
-            var result = await _postService.UpdatePostAsync(post);
+            var result = await _postService.UpdatePostAsync(post, postId);
             return Ok(result);
         }
     }

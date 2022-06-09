@@ -26,14 +26,14 @@ namespace stud_do.API.Controllers
             return Ok(result);
         }
 
-        [HttpGet("get/{scheduleId}")]
+        [HttpGet("get/schedule={scheduleId}")]
         public async Task<ActionResult<ScheduleOutput>> GetSchedule(int scheduleId)
         {
             var result = await _scheduleService.GetScheduleAsync(scheduleId);
             return Ok(result);
         }
 
-        [HttpDelete("delete/{scheduleId}")]
+        [HttpPost("delete/schedule={scheduleId}")]
         public async Task<ActionResult<ServiceResponse<List<ScheduleOutput>>>> DeleteSchedule(int scheduleId)
         {
             var result = await _scheduleService.DeleteSchedule(scheduleId);
@@ -47,24 +47,24 @@ namespace stud_do.API.Controllers
             return Ok(result);
         }
 
-        [HttpPut("creator-update/{scheduleId}")]
+        [HttpPost("creator-update/schedule={scheduleId}")]
         public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> UpdateSchedule(string scheduleName, int scheduleId)
         {
             var result = await _scheduleService.UpdateScheduleAsync(scheduleName, scheduleId);
             return Ok(result);
         }
 
-        [HttpPost("add/{scheduleId}")]
-        public async Task<ActionResult<ServiceResponse<List<ScheduleOutput>>>> AddSchedule(int scheduleId)
+        [HttpPost("update/schedule={scheduleId}")]
+        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> EditSchedule(int scheduleId, string color, bool visibility)
         {
-            var result = await _scheduleService.AddScheduleAsync(scheduleId);
+            var result = await _scheduleService.EditScheduleAsync(scheduleId, color, visibility);
             return Ok(result);
         }
 
-        [HttpPut("update")]
-        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> EditSchedule(ScheduleOutput schedule)
+        [HttpPost("add-user/schedule={scheduleId}/user={userId}")]
+        public async Task<ActionResult<ServiceResponse<List<ScheduleOutput>>>> AddUserToSchedule(int scheduleId, int userId)
         {
-            var result = await _scheduleService.EditScheduleAsync(schedule);
+            var result = await _scheduleService.AddUserToScheduleAsync(scheduleId, userId);
             return Ok(result);
         }
     }

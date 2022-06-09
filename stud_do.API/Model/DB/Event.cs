@@ -10,6 +10,7 @@ namespace stud_do.API.Model
         public DateTime End { get; set; }
         public DateTime? NotificationTime { get; set; }
         public int ScheduleId { get; set; }
+
         [JsonIgnore]
         public Schedule Schedule { get; set; }
     }

@@ -5,6 +5,6 @@
         public int Id { get; set; }
         public string Name { get; set; }
         public string Role { get; set; } = "user";
-        public int UserCount = 1;
+        public List<UserRoomOutput>? Users { get; set; }
     }
 }

@@ -19,54 +19,66 @@ namespace stud_do.API.Controllers
             _roomService = roomService;
         }
 
-        // TODO: getroomS
         [HttpGet("get-all")]
-        public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> GetRoom()
+        public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> GetRooms()
         {
             var result = await _roomService.GetRoomsAsync();
             return Ok(result);
         }
 
-        // TODO: not a List
-        [HttpGet("get/{roomId}")]
-        public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> GetRoom(int roomId)
+        [HttpGet("get/room={roomId}")]
+        public async Task<ActionResult<ServiceResponse<RoomOutput>>> GetRoom(int roomId)
         {
             var result = await _roomService.GetRoomAsync(roomId);
             return Ok(result);
         }
 
-        [HttpGet("search/{searchText}/{page}")]
-        public async Task<ActionResult<ServiceResponse<RoomSearchResult>>> SearchRooms(string searchText, int page = 1)
+        [HttpGet("search/text={searchText}")]
+        public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> SearchRooms(string searchText)
         {
-            var result = await _roomService.SearchRoomsAsync(searchText, page);
+            var result = await _roomService.SearchRoomsAsync(searchText);
             return Ok(result);
         }
 
-        [HttpGet("searchsuggestions/{searchText}")]
-        public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> GetRoomSearchSuggestions(string searchText)
+        [HttpGet("searchsuggestions/text={searchText}")]
+        public async Task<ActionResult<ServiceResponse<List<string>>>> GetRoomSearchSuggestions(string searchText)
         {
             var result = await _roomService.GetRoomSearchSuggestionsAsync(searchText);
             return Ok(result);
         }
 
-        [HttpDelete("delete/{roomId}")]
+        [HttpPost("delete/room={roomId}")]
         public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> DeleteRoom(int roomId)
         {
             var result = await _roomService.DeleteRoom(roomId);
             return Ok(result);
         }
 
-        [HttpPost("create/{roomName}")]
+        [HttpPost("create/name={roomName}")]
         public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> AddRoom(string roomName)
         {
             var result = await _roomService.AddRoomAsync(roomName);
             return Ok(result);
         }
 
-        [HttpPut("update")]
-        public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> UpdateRoom(Room room)
+        [HttpPost("update/room={roomId}")]
+        public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> UpdateRoom(string newName, int roomId)
         {
-            var result = await _roomService.UpdateRoomAsync(room);
+            var result = await _roomService.UpdateRoomAsync(newName, roomId);
+            return Ok(result);
+        }
+
+        [HttpPost("add-member/room={roomId}/user={userId}")]
+        public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> AddMember(int roomId, int userId)
+        {
+            var result = await _roomService.AddMemberAsync(roomId, userId);
+            return Ok(result);
+        }
+
+        [HttpPost("add-moderator/room={roomId}/user={userId}")]
+        public async Task<ActionResult<ServiceResponse<List<RoomOutput>>>> AddModerator(int roomId, int userId)
+        {
+            var result = await _roomService.AddModeratorAsync(roomId, userId);
             return Ok(result);
         }
     }

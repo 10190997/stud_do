@@ -7,6 +7,7 @@ namespace stud_do.API.Model
         public int Id { get; set; }
         public string Text { get; set; }
         public int RoomId { get; set; }
+
         [JsonIgnore]
         public Room Room { get; set; }
 

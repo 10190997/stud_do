@@ -12,20 +12,30 @@ namespace stud_do.API.Services.EventService
             _context = context;
             _httpContextAccessor = httpContextAccessor;
         }
+
+        /// <summary>
+        /// Получение Id авторизованного пользователя
+        /// </summary>
         private int GetUserId() => int.Parse(_httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-        public async Task<ServiceResponse<List<EventOutput>>> AddEventAsync(EventInput ev)
+        public async Task<ServiceResponse<List<EventOutput>>> AddEventAsync(EventInput ev, int scheduleId)
         {
             var result = new ServiceResponse<List<EventOutput>>();
-            if (!IsCreator(ev.ScheduleId))
+            if (!IsCreator(scheduleId))
             {
                 result.Success = false;
-                result.Message = "No rights";
+                result.Message = "Нет прав на изменение расписания.";
+                return result;
+            }
+            if (!CheckEventTime(ev, scheduleId, out string msg))
+            {
+                result.Success = false;
+                result.Message = msg;
                 return result;
             }
             Event newEvent = new()
             {
-                ScheduleId = ev.ScheduleId,
+                ScheduleId = scheduleId,
                 Start = ev.Start,
                 End = ev.End,
                 Name = ev.Name,
@@ -42,17 +52,23 @@ namespace stud_do.API.Services.EventService
                 result.Message = ex.Message;
                 return result;
             }
-            return await GetEventsAsync(ev.ScheduleId);
+            return await GetEventsAsync(scheduleId);
         }
 
         public async Task<ServiceResponse<List<EventOutput>>> DeleteEventAsync(int eventId)
         {
             var result = new ServiceResponse<List<EventOutput>>();
             var dbEvent = await _context.Events.Where(e => e.Id == eventId).FirstOrDefaultAsync();
+            if (dbEvent == null)
+            {
+                result.Success = false;
+                result.Message = "Событие не найдено.";
+                return result;
+            }
             if (!IsCreator(dbEvent.ScheduleId))
             {
                 result.Success = false;
-                result.Message = "No rights";
+                result.Message = "Нет прав на изменение расписания.";
                 return result;
             }
             _context.Events.Remove(dbEvent);
@@ -73,8 +89,22 @@ namespace stud_do.API.Services.EventService
         {
             var result = new ServiceResponse<EventOutput>();
             var ev = await _context.Events.Where(e => e.Id == eventId).FirstOrDefaultAsync();
+            if (ev == null)
+            {
+                result.Success = false;
+                result.Message = "Событие не найдено.";
+                return result;
+            }
+            var schUser = await _context.UsersSchedules.Where(e => e.ScheduleId == ev.ScheduleId && e.UserId == GetUserId()).FirstOrDefaultAsync();
+            if (schUser == null)
+            {
+                result.Success = false;
+                result.Message = "Нет доступа к расписанию.";
+                return result;
+            }
             EventOutput output = new()
             {
+                Id = eventId,
                 Name = ev.Name,
                 Start = ev.Start,
                 End = ev.End,
@@ -85,7 +115,10 @@ namespace stud_do.API.Services.EventService
             return result;
         }
 
-        // TODO: rework
+        /// <summary>
+        /// Проверка прав на изменение расписания
+        /// </summary>
+        /// <param name="scheduleId">Id расписания</param>
         private bool IsCreator(int scheduleId)
         {
             var schedule = _context.Schedules.Where(s => s.CreatorId == GetUserId()
@@ -97,11 +130,25 @@ namespace stud_do.API.Services.EventService
         {
             var result = new ServiceResponse<List<EventOutput>>();
             var events = await _context.Events.Where(e => e.ScheduleId == scheduleId).ToListAsync();
+            if (events.Count == 0)
+            {
+                result.Success = false;
+                result.Message = "События не найдены.";
+                return result;
+            }
+            var schUser = await _context.UsersSchedules.Where(e => e.ScheduleId == scheduleId && e.UserId == GetUserId()).FirstOrDefaultAsync();
+            if (schUser == null)
+            {
+                result.Success = false;
+                result.Message = "Нет доступа к расписанию.";
+                return result;
+            }
             var outputs = new List<EventOutput>();
             foreach (var e in events)
             {
                 EventOutput output = new()
                 {
+                    Id = e.Id,
                     Name = e.Name,
                     Start = e.Start,
                     End = e.End,
@@ -114,20 +161,51 @@ namespace stud_do.API.Services.EventService
             return result;
         }
 
-        public async Task<ServiceResponse<EventOutput>> UpdateEventAsync(Event ev)
+        public async Task<ServiceResponse<EventOutput>> UpdateEventAsync(EventInput ev, int eventId)
         {
             var result = new ServiceResponse<EventOutput>();
-            if (!IsCreator(ev.ScheduleId))
+            var dbEvent = await _context.Events.Where(e => e.Id == eventId).FirstOrDefaultAsync();
+            if (dbEvent == null)
             {
                 result.Success = false;
-                result.Message = "No rights";
+                result.Message = "Событие не найдено.";
                 return result;
             }
-            var dbEvent = await _context.Events.Where(e => e.Id == ev.Id).FirstOrDefaultAsync();
+            if (!IsCreator(dbEvent.ScheduleId))
+            {
+                result.Success = false;
+                result.Message = "Нет прав на изменение расписания.";
+                return result;
+            }
+            if (ev.Start == DateTime.MinValue)
+            {
+                ev.Start = dbEvent.Start;
+            }
+            if (ev.End == DateTime.MinValue)
+            {
+                ev.End = dbEvent.End;
+            }
+            if (ev.NotificationTime == null)
+            {
+                ev.NotificationTime = dbEvent.NotificationTime;
+            }
+            if (string.IsNullOrEmpty(ev.Name))
+            {
+                ev.Name = dbEvent.Name;
+            }
+            if (ev.Start != dbEvent.Start || ev.End != dbEvent.End)
+            {
+                if (!CheckEventTime(ev, dbEvent.ScheduleId, out string msg))
+                {
+                    result.Success = false;
+                    result.Message = msg;
+                    return result;
+                }
+            }
+
             dbEvent.Start = ev.Start;
             dbEvent.End = ev.End;
             dbEvent.Name = ev.Name;
-            dbEvent.ScheduleId = ev.ScheduleId;
             dbEvent.NotificationTime = ev.NotificationTime;
             try
             {
@@ -141,14 +219,40 @@ namespace stud_do.API.Services.EventService
             }
             EventOutput output = new()
             {
+                Id = eventId,
                 Name = ev.Name,
                 Start = ev.Start,
                 End = ev.End,
                 NotificationTime = ev.NotificationTime,
-                ScheduleId = ev.ScheduleId
+                ScheduleId = dbEvent.ScheduleId
             };
             result.Data = output;
             return result;
+        }
+
+        /// <summary>
+        /// Проверка времени события
+        /// </summary>
+        /// <param name="ev">Событие</param>
+        /// <param name="msg">Сообщение</param>
+        private bool CheckEventTime(EventInput ev, int scheduleId, out string msg)
+        {
+            List<Event> events = _context.Events.Where(s => s.ScheduleId == scheduleId).ToList();
+            foreach (var item in events)
+            {
+                if (item.Start == ev.Start)
+                {
+                    msg = "Время начала данного события совпадает с временем начала другого события в этом расписании.";
+                    return false;
+                }
+                if (item.End > ev.Start)
+                {
+                    msg = "Время начала данного события находится в промежутке другого события в этом расписании.";
+                    return false;
+                }
+            }
+            msg = "";
+            return true;
         }
     }
 }

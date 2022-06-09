@@ -4,5 +4,6 @@
     {
         public string Name { get; set; }
         public string Color { get; set; } = "#555555";
+        public bool Visibility { get; set; } = true;
     }
 }

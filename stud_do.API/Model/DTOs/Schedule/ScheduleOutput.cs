@@ -9,5 +9,6 @@
         public string Color { get; set; } = "#555555";
         public bool Visibility { get; set; } = true;
         public List<Event>? Events { get; set; }
+        public List<User>? Users { get; set; }
     }
 }

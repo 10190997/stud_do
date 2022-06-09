@@ -12,6 +12,10 @@ namespace stud_do.API.Services.ScheduleService
             _context = context;
             _httpContextAccessor = httpContextAccessor;
         }
+
+        /// <summary>
+        /// Получение Id авторизованного пользователя
+        /// </summary>
         private int GetUserId() => int.Parse(_httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier));
 
         public async Task<ServiceResponse<List<ScheduleOutput>>> CreateScheduleAsync(ScheduleInput scheduleDTO)
@@ -29,9 +33,11 @@ namespace stud_do.API.Services.ScheduleService
             }
             catch (Exception ex)
             {
-                var result = new ServiceResponse<List<ScheduleOutput>>();
-                result.Success = false;
-                result.Message = ex.Message;
+                var result = new ServiceResponse<List<ScheduleOutput>>
+                {
+                    Success = false,
+                    Message = ex.Message
+                };
                 return result;
             }
             UsersSchedules us = new()
@@ -49,9 +55,11 @@ namespace stud_do.API.Services.ScheduleService
             }
             catch (Exception ex)
             {
-                var result = new ServiceResponse<List<ScheduleOutput>>();
-                result.Success = false;
-                result.Message = ex.Message;
+                var result = new ServiceResponse<List<ScheduleOutput>>
+                {
+                    Success = false,
+                    Message = ex.Message
+                };
                 return result;
             }
             return await GetSchedulesAsync();
@@ -64,16 +72,18 @@ namespace stud_do.API.Services.ScheduleService
             if (schedule == null)
             {
                 return new ServiceResponse<List<ScheduleOutput>>()
-                { Message = "schedule not found", Success = false };
+                { Message = "Расписание не найдено", Success = false };
             }
-            //if (IsCreator(scheduleId))
-            //{
-            //    var allUs = await _context.UsersSchedules.Where(s => s.ScheduleId == scheduleId).ToListAsync();
-            //    if (allUs.Any())
-            //    {
-            //        _context.UsersSchedules.RemoveRange(allUs);
-            //    }
-            //}
+            if (!IsCreator(scheduleId))
+            {
+                return new ServiceResponse<List<ScheduleOutput>>()
+                { Message = "Нет прав на удаление расписания", Success = false };
+            }
+            var allUs = await _context.UsersSchedules.Where(s => s.ScheduleId == scheduleId).ToListAsync();
+            if (allUs.Any())
+            {
+                _context.UsersSchedules.RemoveRange(allUs);
+            }
             _context.Schedules.Remove(schedule);
             try
             {
@@ -81,15 +91,21 @@ namespace stud_do.API.Services.ScheduleService
             }
             catch (Exception ex)
             {
-                var result = new ServiceResponse<List<ScheduleOutput>>();
-                result.Success = false;
-                result.Message = ex.Message;
+                var result = new ServiceResponse<List<ScheduleOutput>>
+                {
+                    Success = false,
+                    Message = ex.Message
+                };
                 return result;
             }
 
             return await GetSchedulesAsync();
         }
 
+        /// <summary>
+        /// Проверка создателя расписания
+        /// </summary>
+        /// <param name="scheduleId"></param>
         private bool IsCreator(int scheduleId)
         {
             var schedule = _context.Schedules.Where(s => s.CreatorId == GetUserId()
@@ -106,13 +122,16 @@ namespace stud_do.API.Services.ScheduleService
             if (schedule == null)
             {
                 response.Success = false;
-                response.Message = "Schedule does not exist or is unavailable.";
+                response.Message = "Расписание не найдено.";
             }
 
             response.Data = schedule;
             return response;
         }
 
+        /// <summary>
+        /// Получить расписания пользователя
+        /// </summary>
         private async Task<List<ScheduleOutput>> GetSchedulesForUser()
         {
             var schedulesUsers = await _context.UsersSchedules.Where(us => us.UserId == GetUserId()).ToListAsync();
@@ -125,15 +144,26 @@ namespace stud_do.API.Services.ScheduleService
                     var scheduleUser = schedulesUsers.FirstOrDefault(us => us.ScheduleId == schedule.Id);
                     if (scheduleUser != null)
                     {
-                        result.Add(new ScheduleOutput 
-                        { 
+                        var schedulesForUsers = await _context.UsersSchedules.Where(us => us.ScheduleId == schedule.Id).ToListAsync();
+                        var users = new List<User>();
+                        foreach (var user in schedulesForUsers)
+                        {
+                            var u = _context.Users.Where(u => u.Id == user.UserId).FirstOrDefault();
+                            if (u != null)
+                            {
+                                users.Add(u);
+                            }
+                        }
+                        result.Add(new ScheduleOutput
+                        {
                             Created = schedule.Created,
                             CreatorId = schedule.CreatorId,
                             Id = schedule.Id,
                             Events = await _context.Events.Where(e => e.ScheduleId == schedule.Id).ToListAsync(),
                             Name = schedule.Name,
-                            Color = scheduleUser.Color, 
-                            Visibility = scheduleUser.Visibility 
+                            Color = scheduleUser.Color ?? "#555555",
+                            Visibility = scheduleUser.Visibility,
+                            Users = users
                         });
                     }
                 }
@@ -148,7 +178,7 @@ namespace stud_do.API.Services.ScheduleService
             if (uSchedules.Count < 1)
             {
                 response.Success = false;
-                response.Message = "No schedules found.";
+                response.Message = "Расписания не найдены.";
             }
             response.Data = uSchedules;
             return response;
@@ -162,7 +192,7 @@ namespace stud_do.API.Services.ScheduleService
             if (!IsCreator(scheduleId))
             {
                 result.Success = false;
-                result.Message = "No rights.";
+                result.Message = "Нет прав.";
                 return result;
             }
             var scheduleDB = await _context.Schedules.Where(s => s.Id == scheduleId && s.CreatorId == GetUserId()).FirstOrDefaultAsync();
@@ -177,46 +207,93 @@ namespace stud_do.API.Services.ScheduleService
                 result.Message = ex.Message;
                 return result;
             }
-            
 
             return await GetScheduleAsync(scheduleId);
         }
 
-        public async Task<ServiceResponse<List<ScheduleOutput>>> AddScheduleAsync(int scheduleId)
+        /// <summary>
+        /// Изменить внешний вид расписания
+        /// </summary>
+        /// <param name="schedule"></param>
+        public async Task<ServiceResponse<ScheduleOutput>> EditScheduleAsync(int scheduleId, string color, bool visibility)
         {
-            await _context.UsersSchedules.AddAsync(new UsersSchedules() { ScheduleId = scheduleId, UserId = GetUserId() });
+            var userSchedule = await _context.UsersSchedules.Where(us => us.ScheduleId == scheduleId && us.UserId == GetUserId()).FirstOrDefaultAsync();
+            userSchedule.Color = color;
+            userSchedule.Visibility = visibility;
             try
             {
                 await _context.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                var result = new ServiceResponse<List<ScheduleOutput>>();
-                result.Success = false;
-                result.Message = ex.Message;
+                var result = new ServiceResponse<ScheduleOutput>
+                {
+                    Success = false,
+                    Message = ex.Message
+                };
                 return result;
             }
-            return await GetSchedulesAsync();
+
+            return await GetScheduleAsync(scheduleId);
         }
 
-        public async Task<ServiceResponse<ScheduleOutput>> EditScheduleAsync(ScheduleOutput schedule)
+        /// <summary>
+        /// Выдать доступ к расписанию
+        /// </summary>
+        public async Task<ServiceResponse<ScheduleOutput>> AddUserToScheduleAsync(int scheduleId, int userId)
         {
-            var userSchedule = await _context.UsersSchedules.Where(us => us.ScheduleId == schedule.Id && us.UserId == GetUserId()).FirstOrDefaultAsync();
-            userSchedule.Color = schedule.Color;
-            userSchedule.Visibility = schedule.Visibility;
+            var response = new ServiceResponse<ScheduleOutput>();
+            var schedule = await _context.Schedules.Where(r => r.Id == scheduleId).FirstOrDefaultAsync();
+            if (schedule == null)
+            {
+                response.Success = false;
+                response.Message = "Расписание не найдено.";
+                return response;
+            }
+            var user = await _context.Users.Where(u => u.Id == userId).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                response.Success = false;
+                response.Message = "Пользователь не найден.";
+                return response;
+            }
+            var us = GetMemberUserSchedule(scheduleId, userId);
+            if (us.UserId != 0)
+            {
+                response.Success = false;
+                response.Message = "Пользователь уже имеет доступ к расписанию";
+                return response;
+            }
+            var userSchedule = new UsersSchedules
+            {
+                ScheduleId = scheduleId,
+                UserId = userId
+            };
+
+            await _context.UsersSchedules.AddAsync(userSchedule);
             try
             {
                 await _context.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                var result = new ServiceResponse<ScheduleOutput>();
-                result.Success = false;
-                result.Message = ex.Message;
-                return result;
+                response.Success = false;
+                response.Message = ex.Message;
+                return response;
             }
 
-            return await GetScheduleAsync(schedule.Id);
+            return await GetScheduleAsync(scheduleId);
+        }
+
+        private UsersSchedules GetMemberUserSchedule(int scheduleId, int userId)
+        {
+            var users = _context.UsersSchedules.Where(x => x.UserId == userId).ToList();
+            var us = users.Where(x => x.ScheduleId == scheduleId).FirstOrDefault();
+            if (us == null)
+            {
+                return new UsersSchedules();
+            }
+            return us;
         }
     }
 }

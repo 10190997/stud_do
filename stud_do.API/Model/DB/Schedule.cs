@@ -8,6 +8,7 @@ namespace stud_do.API.Model
         public string Name { get; set; }
         public DateTime Created { get; set; }
         public int? CreatorId { get; set; }
+
         [JsonIgnore]
         public User? Creator { get; set; }
 

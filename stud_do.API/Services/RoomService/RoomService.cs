@@ -13,6 +13,9 @@ namespace stud_do.API.Services.RoomService
             _httpContextAccessor = httpContextAccessor;
         }
 
+        /// <summary>
+        /// Получение Id авторизованного пользователя
+        /// </summary>
         private int GetUserId() => int.Parse(_httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier));
 
         public async Task<ServiceResponse<RoomOutput>> GetRoomAsync(int roomId)
@@ -24,7 +27,7 @@ namespace stud_do.API.Services.RoomService
             if (room == null)
             {
                 response.Success = false;
-                response.Message = "Room does not exist or is unavailable.";
+                response.Message = "Комната не найдена.";
             }
 
             response.Data = room;
@@ -32,6 +35,9 @@ namespace stud_do.API.Services.RoomService
             return response;
         }
 
+        /// <summary>
+        /// Получить комнаты, доступные пользователю
+        /// </summary>
         private async Task<List<RoomOutput>> GetRoomsForUser()
         {
             var usersRooms = await _context.UsersRooms.Where(ur => ur.UserId == GetUserId()).ToListAsync();
@@ -45,12 +51,31 @@ namespace stud_do.API.Services.RoomService
                     var userRoom = usersRooms.FirstOrDefault(ur => ur.RoomId == room.Id);
                     if (userRoom != null)
                     {
+                        var roomsForUsers = await _context.UsersRooms.Where(ur => ur.RoomId == room.Id).ToListAsync();
+                        var users = new List<UserRoomOutput>();
+                        foreach (var user in roomsForUsers)
+                        {
+                            var u = _context.Users.Where(u => u.Id == user.UserId).FirstOrDefault();
+                            if (u != null)
+                            {
+                                var roomRole = await _context.UsersRooms.Where(ur => ur.UserId == u.Id && ur.RoomId == room.Id).FirstOrDefaultAsync();
+                                var roleOfUser = await _context.Roles.Where(r => r.Id == roomRole.RoleId).FirstOrDefaultAsync();
+                                users.Add(new UserRoomOutput
+                                {
+                                    Id = u.Id,
+                                    Email = u.Email,
+                                    Login = u.Login,
+                                    Role = roleOfUser.Name
+                                });
+                            }
+                        }
                         var role = await _context.Roles.Where(r => r.Id == userRoom.RoleId).FirstOrDefaultAsync();
-                        result.Add(new RoomOutput 
-                        { 
+                        result.Add(new RoomOutput
+                        {
                             Id = room.Id,
                             Name = room.Name,
-                            Role = role.Name 
+                            Role = role.Name,
+                            Users = users
                         });
                     }
                 }
@@ -65,7 +90,7 @@ namespace stud_do.API.Services.RoomService
             if (uRooms.Count < 1)
             {
                 response.Success = false;
-                response.Message = "No rooms found.";
+                response.Message = "Не найдено ни одной комнаты.";
             }
             response.Data = uRooms;
 
@@ -92,29 +117,22 @@ namespace stud_do.API.Services.RoomService
             };
         }
 
-        public async Task<ServiceResponse<RoomSearchResult>> SearchRoomsAsync(string searchText, int page)
+        public async Task<ServiceResponse<List<RoomOutput>>> SearchRoomsAsync(string searchText)
         {
-            var pageResults = 2f;
-            var pageCount = Math.Ceiling((await FindRoomBySearchTextAsync(searchText)).Count / pageResults);
-            var uRooms = await GetRoomsForUser();
-            var rooms = uRooms.Where(r => r.Name.ToLower().Contains(searchText.ToLower()))
-                                .Skip((page - 1) * (int)pageResults)
-                                .Take((int)pageResults)
-                                .ToList();
+            var rooms = await FindRoomBySearchTextAsync(searchText);
 
-            var response = new ServiceResponse<RoomSearchResult>
+            var response = new ServiceResponse<List<RoomOutput>>
             {
-                Data = new RoomSearchResult
-                {
-                    Rooms = rooms,
-                    CurrentPage = page,
-                    Pages = (int)pageCount
-                }
+                Data = rooms
             };
 
             return response;
         }
 
+        /// <summary>
+        /// Найти комнаты по названию
+        /// </summary>
+        /// <param name="searchText">Строка поиска</param>
         private async Task<List<RoomOutput>> FindRoomBySearchTextAsync(string searchText)
         {
             var uRooms = await GetRoomsForUser();
@@ -130,11 +148,18 @@ namespace stud_do.API.Services.RoomService
             }
 
             var dbRoom = await _context.Rooms.Where(r => r.Id == roomId).FirstOrDefaultAsync();
+            if (dbRoom == null)
+            {
+                response.Success = false;
+                response.Message = "Комната не найдена.";
+                return response;
+            }
             var ur = await _context.UsersRooms.Where(ur => ur.RoomId == roomId).ToListAsync();
-            //_context.UsersRooms.RemoveRange(ur);
-            _context.Rooms.Remove(dbRoom);
+
             try
             {
+                _context.UsersRooms.RemoveRange(ur);
+                _context.Rooms.Remove(dbRoom);
                 await _context.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -149,6 +174,7 @@ namespace stud_do.API.Services.RoomService
 
         public async Task<ServiceResponse<List<RoomOutput>>> AddRoomAsync(string name)
         {
+            var result = new ServiceResponse<List<RoomOutput>>();
             Room room = new()
             {
                 Name = name
@@ -160,7 +186,6 @@ namespace stud_do.API.Services.RoomService
             }
             catch (Exception ex)
             {
-                var result = new ServiceResponse<List<RoomOutput>>();
                 result.Success = false;
                 result.Message = ex.Message;
                 return result;
@@ -178,7 +203,6 @@ namespace stud_do.API.Services.RoomService
             }
             catch (Exception ex)
             {
-                var result = new ServiceResponse<List<RoomOutput>>();
                 result.Success = false;
                 result.Message = ex.Message;
                 return result;
@@ -186,6 +210,10 @@ namespace stud_do.API.Services.RoomService
             return await GetRoomsAsync();
         }
 
+        /// <summary>
+        /// Проверка прав администратора
+        /// </summary>
+        /// <param name="roomId">Id комнаты</param>
         private async Task<ServiceResponse<List<RoomOutput>>> AdminCheck(int roomId)
         {
             var response = new ServiceResponse<List<RoomOutput>>();
@@ -199,12 +227,12 @@ namespace stud_do.API.Services.RoomService
             var ur = urs.FirstOrDefault(ur => ur.RoomId == roomId);
             if (ur == null)
             {
-                response.Message = "Room not found.";
+                response.Message = "Комната не найдена.";
                 response.Success = false;
             }
             else if (ur.RoleId != 1)
             {
-                response.Message = "No rights.";
+                response.Message = "Нет прав.";
                 response.Success = false;
             }
             else
@@ -214,16 +242,63 @@ namespace stud_do.API.Services.RoomService
             return response;
         }
 
-        public async Task<ServiceResponse<List<RoomOutput>>> UpdateRoomAsync(Room room)
+        public async Task<ServiceResponse<RoomOutput>> UpdateRoomAsync(string newName, int roomId)
         {
-            var response = await AdminCheck(room.Id);
+            var response = await AdminCheck(roomId);
+            var result = new ServiceResponse<RoomOutput>();
             if (!response.Success)
             {
+                result.Success = false;
+                result.Message = response.Message;
+                return result;
+            }
+
+            var dbRoom = await _context.Rooms.Where(r => r.Id == roomId).FirstOrDefaultAsync();
+            dbRoom.Name = newName;
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.Message = ex.Message;
+                return result;
+            }
+
+            return await GetRoomAsync(dbRoom.Id);
+        }
+
+        public async Task<ServiceResponse<RoomOutput>> AddMemberAsync(int roomId, int userId)
+        {
+            var response = new ServiceResponse<RoomOutput>();
+            var room = await _context.Rooms.Where(r => r.Id == roomId).FirstOrDefaultAsync();
+            if (room == null)
+            {
+                response.Success = false;
+                response.Message = "Комната не найдена.";
+                return response;
+            }
+            var user = await _context.Users.Where(u => u.Id == userId).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                response.Success = false;
+                response.Message = "Пользователь не найден.";
+                return response;
+            }
+            var ur = GetMember(roomId, userId);
+            if (ur.UserId != 0)
+            {
+                response.Success = false;
+                response.Message = "Пользователь уже является участником комнаты";
                 return response;
             }
 
-            var dbRoom = await _context.Rooms.Where(r => r.Id == room.Id).FirstOrDefaultAsync();
-            dbRoom.Name = room.Name;
+            ur.RoleId = 3;
+            ur.UserId = userId;
+            ur.RoomId = roomId;
+
+            await _context.UsersRooms.AddAsync(ur);
             try
             {
                 await _context.SaveChangesAsync();
@@ -234,8 +309,65 @@ namespace stud_do.API.Services.RoomService
                 response.Message = ex.Message;
                 return response;
             }
-            // TODO: return ONE room
-            return await GetRoomsAsync();
+
+            return await GetRoomAsync(roomId);
+        }
+
+        public async Task<ServiceResponse<RoomOutput>> AddModeratorAsync(int roomId, int userId)
+        {
+            var response = new ServiceResponse<RoomOutput>();
+            var room = await _context.Rooms.Where(r => r.Id == roomId).FirstOrDefaultAsync();
+            if (room == null)
+            {
+                response.Success = false;
+                response.Message = "Комната не найдена.";
+                return response;
+            }
+            var user = await _context.Users.Where(u => u.Id == userId).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                response.Success = false;
+                response.Message = "Пользователь не найден.";
+                return response;
+            }
+
+            var ur = GetMember(roomId, userId);
+            if (ur.UserId == 0)
+            {
+                response.Success = false;
+                response.Message = "Пользователь не является участником комнаты";
+                return response;
+            }
+
+            ur.RoleId = 2;
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                return response;
+            }
+
+            return await GetRoomAsync(roomId);
+        }
+
+        /// <summary>
+        /// Получить участника комнаты
+        /// </summary>
+        /// <param name="roomId"></param>
+        /// <param name="userId"></param>
+        private UserRoom GetMember(int roomId, int userId)
+        {
+            var users = _context.UsersRooms.Where(x => x.UserId == userId).ToList();
+            var ur = users.Where(x => x.RoomId == roomId).FirstOrDefault();
+            if (ur == null)
+            {
+                return new UserRoom();
+            }
+            return ur;
         }
     }
 }

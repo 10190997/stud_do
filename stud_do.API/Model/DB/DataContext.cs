@@ -41,6 +41,7 @@
         public DbSet<UserRoom> UsersRooms { get; set; }
         public DbSet<Event> Events { get; set; }
         public DbSet<Post> Posts { get; set; }
+        public DbSet<Attachment> Attachments { get; set; }
         public DbSet<Schedule> Schedules { get; set; }
         public DbSet<UsersSchedules> UsersSchedules { get; set; }
     }
