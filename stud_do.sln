@@ -10,6 +10,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api.Test", "Api.Test\Api.Test.csproj", "{59966859-CCD1-47BA-A695-D33120D7E839}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,6 +22,10 @@ Global
 		{91AD3472-11A1-4D3B-A6C1-856907B5DF5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{91AD3472-11A1-4D3B-A6C1-856907B5DF5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{91AD3472-11A1-4D3B-A6C1-856907B5DF5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{59966859-CCD1-47BA-A695-D33120D7E839}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59966859-CCD1-47BA-A695-D33120D7E839}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59966859-CCD1-47BA-A695-D33120D7E839}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59966859-CCD1-47BA-A695-D33120D7E839}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

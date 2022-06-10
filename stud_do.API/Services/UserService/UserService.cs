@@ -50,7 +50,7 @@ namespace stud_do.API.Services.UserService
                 return new ServiceResponse<UserOutput>
                 {
                     Success = false,
-                    Message = "Строка не являетс Email"
+                    Message = "Строка не является Email"
                 };
             }
             var userDb = await _context.Users.Where(u => u.Id == GetUserId()).FirstOrDefaultAsync();
@@ -129,7 +129,7 @@ namespace stud_do.API.Services.UserService
         }
 
         /// <summary>
-        /// Поиск пользователя по email
+        /// Поиск пользователя по login
         /// </summary>
         /// <param name="searchText">Текст поиска</param>
         private async Task<List<UserOutput>> FindUserBySearchTextAsync(string searchText)
