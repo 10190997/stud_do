@@ -384,6 +384,11 @@ namespace stud_do.API.Services.EventService
                     return false;
                 }
             }
+            if (ev.Start >= ev.End)
+            {
+                msg = "Время начала события должно быть раньше, чем время конца.";
+                return false;
+            }
             msg = "";
             return true;
         }

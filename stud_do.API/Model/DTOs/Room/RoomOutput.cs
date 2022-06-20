@@ -6,5 +6,6 @@
         public string Name { get; set; }
         public string Role { get; set; } = "user";
         public List<UserRoomOutput>? Users { get; set; }
+        public List<PostOutput>? Posts { get; set; }
     }
 }

@@ -391,7 +391,7 @@ namespace stud_do.API.Services.RoomService
                 return new ServiceResponse<RoomOutput>
                 {
                     Success = false,
-                    Message = "Пользователь не найден"
+                    Message = "Пользователь не найден."
                 };
             }
             var ur = await _context.UsersRooms.Where(u => u.UserId == userId && u.RoomId == roomId).FirstOrDefaultAsync();
@@ -401,7 +401,7 @@ namespace stud_do.API.Services.RoomService
                 return new ServiceResponse<RoomOutput>
                 {
                     Success = false,
-                    Message = "Пользователь не является участником комнаты"
+                    Message = "Пользователь не является участником комнаты."
                 };
             }
 
@@ -413,7 +413,7 @@ namespace stud_do.API.Services.RoomService
                     return new ServiceResponse<RoomOutput>
                     {
                         Success = false,
-                        Message = "Неизвестная ошибка"
+                        Message = "Нет доступа."
                     };
                 }
                 if (role.RoleId != 1)
