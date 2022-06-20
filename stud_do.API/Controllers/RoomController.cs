@@ -27,7 +27,7 @@ namespace stud_do.API.Controllers
         }
 
         [HttpPost("create")]
-        public async Task<ActionResult<ServiceResponse<RoomOutput>>> CreateRoom(string roomName)
+        public async Task<ActionResult<ServiceResponse<RoomOutput>>> CreateRoom([FromBody] string roomName)
         {
             var result = await _roomService.CreateRoom(roomName);
             return Ok(result);
@@ -41,7 +41,7 @@ namespace stud_do.API.Controllers
         }
 
         [HttpPost("update/{roomId}")]
-        public async Task<ActionResult<ServiceResponse<RoomOutput>>> UpdateRoom(int roomId, string newName)
+        public async Task<ActionResult<ServiceResponse<RoomOutput>>> UpdateRoom(int roomId, [FromBody] string newName)
         {
             var result = await _roomService.UpdateRoom(roomId, newName);
             return Ok(result);
@@ -69,28 +69,28 @@ namespace stud_do.API.Controllers
         }
 
         [HttpPost("add-member/{roomId}")]
-        public async Task<ActionResult<ServiceResponse<RoomOutput>>> AddMember(int roomId, int userId)
+        public async Task<ActionResult<ServiceResponse<RoomOutput>>> AddMember(int roomId, [FromBody] int userId)
         {
             var result = await _roomService.AddMember(roomId, userId);
             return Ok(result);
         }
 
         [HttpPost("remove-member/{roomId}")]
-        public async Task<ActionResult<ServiceResponse<RoomOutput>>> RemoveMember(int roomId, int userId)
+        public async Task<ActionResult<ServiceResponse<RoomOutput>>> RemoveMember(int roomId, [FromBody] int userId)
         {
             var result = await _roomService.RemoveMember(roomId, userId);
             return Ok(result);
         }
 
         [HttpPost("add-moderator/{roomId}")]
-        public async Task<ActionResult<ServiceResponse<RoomOutput>>> AddModerator(int roomId, int userId)
+        public async Task<ActionResult<ServiceResponse<RoomOutput>>> AddModerator(int roomId, [FromBody] int userId)
         {
             var result = await _roomService.AddModerator(roomId, userId);
             return Ok(result);
         }
 
         [HttpPost("remove-moderator/{roomId}")]
-        public async Task<ActionResult<ServiceResponse<RoomOutput>>> RemoveModerator(int roomId, int userId)
+        public async Task<ActionResult<ServiceResponse<RoomOutput>>> RemoveModerator(int roomId, [FromBody] int userId)
         {
             var result = await _roomService.RemoveModerator(roomId, userId);
             return Ok(result);

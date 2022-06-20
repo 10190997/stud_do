@@ -41,20 +41,20 @@ namespace stud_do.API.Controllers
         }
 
         [HttpPost("update-name/{scheduleId}")]
-        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> UpdateScheduleName(int scheduleId, string scheduleName)
+        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> UpdateScheduleName(int scheduleId, [FromBody] string scheduleName)
         {
             var result = await _scheduleService.UpdateScheduleName(scheduleId, scheduleName);
             return Ok(result);
         }
 
         [HttpPost("update-color/{scheduleId}")]
-        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> UpdateScheduleColor(int scheduleId, string color)
+        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> UpdateScheduleColor(int scheduleId, [FromBody] string color)
         {
             var result = await _scheduleService.UpdateScheduleColor(scheduleId, color);
             return Ok(result);
         }
 
-        [HttpPost("delete/schedule={scheduleId}")]
+        [HttpPost("delete/{scheduleId}")]
         public async Task<ActionResult<ServiceResponse<List<ScheduleOutput>>>> DeleteSchedule(int scheduleId)
         {
             var result = await _scheduleService.DeleteSchedule(scheduleId);
@@ -76,14 +76,14 @@ namespace stud_do.API.Controllers
         }
 
         [HttpPost("add-user/{scheduleId}")]
-        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> AddUserToSchedule(int scheduleId, int userId)
+        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> AddUserToSchedule(int scheduleId, [FromBody] int userId)
         {
             var result = await _scheduleService.AddUserToSchedule(scheduleId, userId);
             return Ok(result);
         }
 
         [HttpPost("remove-user/{scheduleId}")]
-        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> RemoveUserFromSchedule(int scheduleId, int userId)
+        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> RemoveUserFromSchedule(int scheduleId, [FromBody] int userId)
         {
             var result = await _scheduleService.RemoveUserFromSchedule(scheduleId, userId);
             return Ok(result);
