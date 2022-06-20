@@ -17,37 +17,6 @@ namespace stud_do.API.Services.AuthService
             _configuration = configuration;
         }
 
-        public async Task<ServiceResponse<string>> Login(string email, string password)
-        {
-            var response = new ServiceResponse<string>();
-            if (!IsValidEmail(email))
-            {
-                return new ServiceResponse<string>
-                {
-                    Success = false,
-                    Message = "Строка не является Email."
-                };
-            }
-
-            var user = await _context.Users
-                .FirstOrDefaultAsync(x => x.Email.ToLower().Equals(email.ToLower()));
-            if (user == null)
-            {
-                response.Success = false;
-                response.Message = "Пользователь с таким Email не найден.";
-                return response;
-            }
-            if (!VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
-            {
-                response.Success = false;
-                response.Message = "Неверный пароль.";
-                return response;
-            }
-
-            response.Data = CreateToken(user);
-            return response;
-        }
-
         public async Task<ServiceResponse<int>> Register(User user, string password)
         {
             if (await UserExists(user.Email))
@@ -68,12 +37,21 @@ namespace stud_do.API.Services.AuthService
                 };
             }
 
-            if (!CheckPassword(password, out string msg))
+            if (!CheckLogin(user.Login, out string msgLogin))
             {
                 return new ServiceResponse<int>
                 {
                     Success = false,
-                    Message = msg
+                    Message = msgLogin
+                };
+            }
+
+            if (!CheckPassword(password, out string msgPassword))
+            {
+                return new ServiceResponse<int>
+                {
+                    Success = false,
+                    Message = msgPassword
                 };
             }
 
@@ -92,7 +70,7 @@ namespace stud_do.API.Services.AuthService
                 return new ServiceResponse<int>
                 {
                     Success = false,
-                    Message = ex.Message
+                    Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message
                 };
             }
 
@@ -100,6 +78,44 @@ namespace stud_do.API.Services.AuthService
             {
                 Data = user.Id,
                 Message = "Регистрация прошла успешно."
+            };
+        }
+
+        public async Task<ServiceResponse<string>> Login(string email, string password)
+        {
+            if (!IsValidEmail(email))
+            {
+                return new ServiceResponse<string>
+                {
+                    Success = false,
+                    Message = "Строка не является Email."
+                };
+            }
+
+            var user = await _context.Users
+                .FirstOrDefaultAsync(x => x.Email.ToLower().Equals(email.ToLower()));
+            if (user == null)
+            {
+                return new ServiceResponse<string>
+                {
+                    Success = false,
+                    Message = "Пользователь с таким Email не найден."
+                };
+            }
+
+            if (!VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
+            {
+                return new ServiceResponse<string>
+                {
+                    Success = false,
+                    Message = "Неверный пароль.",
+                };
+            }
+
+            return new ServiceResponse<string>
+            {
+                Data = CreateToken(user),
+                Message = "Авторизация прошла успешно."
             };
         }
 
@@ -111,7 +127,7 @@ namespace stud_do.API.Services.AuthService
                 return new ServiceResponse<bool>
                 {
                     Success = false,
-                    Message = "User not found."
+                    Message = "Пользователь не найден."
                 };
             }
 
@@ -138,16 +154,17 @@ namespace stud_do.API.Services.AuthService
                 return new ServiceResponse<bool>
                 {
                     Success = false,
-                    Message = ex.Message
+                    Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message
                 };
             }
 
             return new ServiceResponse<bool>
             {
-                Data = true,
                 Message = "Пароль был успешно изменен."
             };
         }
+
+        #region private
 
         /// <summary>
         /// Проверка на существование пользователя по Email
@@ -249,6 +266,12 @@ namespace stud_do.API.Services.AuthService
                 return false;
             }
 
+            if (!password.Any(char.IsNumber))
+            {
+                message = "Пароль должен содержать как минимум одну цифру.";
+                return false;
+            }
+
             string specialChars = @"%!@#$%^&*()?/>.<,:;'\|}]{[_~`+=-" + "\"";
             char[] specialCharsArr = specialChars.ToCharArray();
             foreach (char ch in specialCharsArr)
@@ -285,6 +308,36 @@ namespace stud_do.API.Services.AuthService
                 return false;
             }
         }
-    }
 
+        /// <summary>
+        /// Проверка валидности логина
+        /// </summary>
+        /// <param name="login">Логин</param>
+        /// <param name="msg">Сообщение</param>
+        public static bool CheckLogin(string login, out string msg)
+        {
+            if (string.IsNullOrEmpty(login) || string.IsNullOrWhiteSpace(login))
+            {
+                msg = "Заполните поле логин.";
+                return false;
+            }
+
+            if (login.Length < 6)
+            {
+                msg = "Минимальная длина логина - 6 символов.";
+                return false;
+            }
+
+            if (login.Length > 20)
+            {
+                msg = "Максимальная длина логина - 20 символов.";
+                return false;
+            }
+
+            msg = "";
+            return true;
+        }
+
+        #endregion private
+    }
 }

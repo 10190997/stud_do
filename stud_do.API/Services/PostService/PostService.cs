@@ -14,29 +14,74 @@ namespace stud_do.API.Services.PostService
         }
 
         /// <summary>
-        /// Получение Id авторизованного пользователя
+        /// Получить все записи в комнате
         /// </summary>
-        private int GetUserId() => int.Parse(_httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier));
-
-        public async Task<ServiceResponse<List<PostOutput>>> AddPostAsync(PostInput post, int roomId)
+        /// <param name="roomId">Id комнаты</param>
+        public async Task<ServiceResponse<List<PostOutput>>> GetPosts(int roomId)
         {
-            var result = new ServiceResponse<List<PostOutput>>();
-            var dbRoom = await _context.Rooms.Where(p => p.Id == roomId).FirstOrDefaultAsync();
+            var roomUsrs = await _context.UsersRooms.Where(p => p.RoomId == roomId).ToListAsync();
+            if (!roomUsrs.Any(x => x.UserId == GetUserId()))
+            {
+                return new ServiceResponse<List<PostOutput>>
+                {
+                    Success = false,
+                    Message = "Нет доступа к комнате."
+                };
+            }
+            var posts = await _context.Posts.Where(p => p.RoomId == roomId).ToListAsync();
+            if (posts.Count == 0)
+            {
+                return new ServiceResponse<List<PostOutput>>
+                {
+                    Success = false,
+                    Message = "Записи не найдены."
+                };
+            }
+            var outputs = new List<PostOutput>();
+            foreach (var post in posts)
+            {
+                PostOutput output = new()
+                {
+                    Text = post.Text,
+                    RoomId = roomId,
+                    Id = post.Id,
+                    Attachments = await GetAttahcments(post.Id)
+                };
+                outputs.Add(output);
+            }
+            return new ServiceResponse<List<PostOutput>>
+            {
+                Data = outputs
+            };
+        }
+
+        /// <summary>
+        /// Создать запись и добавить ее в комнату
+        /// </summary>
+        /// <param name="post">Запись</param>
+        /// <param name="roomId">Id комнаты</param>
+        public async Task<ServiceResponse<PostOutput>> CreatePost(PostInput post)
+        {
+            var dbRoom = await _context.Rooms.Where(p => p.Id == post.RoomId).FirstOrDefaultAsync();
             if (dbRoom == null)
             {
-                result.Success = false;
-                result.Message = "Комната не найдена.";
-                return result;
+                return new ServiceResponse<PostOutput>
+                {
+                    Success = false,
+                    Message = "Комната не найдена."
+                };
             }
-            if (!IsAdmin(roomId) && !IsModerator(roomId))
+            if (!IsAdmin(post.RoomId) && !IsModerator(post.RoomId))
             {
-                result.Success = false;
-                result.Message = "Нет прав на добавление записи.";
-                return result;
+                return new ServiceResponse<PostOutput>
+                {
+                    Success = false,
+                    Message = "Нет прав на добавление записи."
+                };
             }
             Post newPost = new()
             {
-                RoomId = roomId,
+                RoomId = post.RoomId,
                 Text = post.Text
             };
             _context.Posts.Add(newPost);
@@ -46,9 +91,11 @@ namespace stud_do.API.Services.PostService
             }
             catch (Exception ex)
             {
-                result.Success = false;
-                result.Message = ex.Message;
-                return result;
+                return new ServiceResponse<PostOutput>
+                {
+                    Success = false,
+                    Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message
+                };
             }
             if (post.Attachments != null)
             {
@@ -64,12 +111,211 @@ namespace stud_do.API.Services.PostService
                 }
                 catch (Exception ex)
                 {
-                    result.Success = false;
-                    result.Message = ex.Message;
-                    return result;
+                    return new ServiceResponse<PostOutput>
+                    {
+                        Success = false,
+                        Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message
+                    };
                 }
             }
-            return await GetPostsAsync(newPost.RoomId);
+            return await GetPost(newPost.Id);
+        }
+
+        /// <summary>
+        /// Получить запись
+        /// </summary>
+        /// <param name="postId">Id записи</param>
+        public async Task<ServiceResponse<PostOutput>> GetPost(int postId)
+        {
+            var post = await _context.Posts.Where(p => p.Id == postId).FirstOrDefaultAsync();
+            if (post == null)
+            {
+                return new ServiceResponse<PostOutput>
+                {
+                    Success = false,
+                    Message = "Запись не найдена."
+                };
+            }
+            var roomUsrs = await _context.UsersRooms.Where(p => p.RoomId == post.RoomId).ToListAsync();
+            if (!roomUsrs.Any(x => x.UserId == GetUserId()))
+            {
+                return new ServiceResponse<PostOutput>
+                {
+                    Success = false,
+                    Message = "Нет доступа к комнате."
+                };
+            }
+            var atts = await GetAttahcments(postId);
+            PostOutput output = new()
+            {
+                Text = post.Text,
+                RoomId = post.RoomId,
+                Id = postId,
+                Attachments = atts
+            };
+            return new ServiceResponse<PostOutput>
+            {
+                Data = output
+            };
+        }
+
+        /// <summary>
+        /// Редактировать запись
+        /// </summary>
+        /// <param name="post">Запись</param>
+        /// <param name="postId">Id записи</param>
+        public async Task<ServiceResponse<PostOutput>> UpdatePost(int postId, PostInput post)
+        {
+            var dbPost = await _context.Posts.Where(p => p.Id == postId).FirstOrDefaultAsync();
+            if (dbPost == null)
+            {
+                return new ServiceResponse<PostOutput>
+                {
+                    Success = false,
+                    Message = "Запись не найдена."
+                };
+            }
+            if (!IsAdmin(dbPost.RoomId) && !IsModerator(dbPost.RoomId))
+            {
+                return new ServiceResponse<PostOutput>
+                {
+                    Success = false,
+                    Message = "Нет прав на изменение записи."
+                };
+            }
+
+            dbPost.Text = post.Text;
+            var dbAtts = await _context.Attachments.Where(a => a.PostId == postId).ToListAsync();
+            if (dbAtts != null)
+            {
+                _context.Attachments.RemoveRange(dbAtts);
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    return new ServiceResponse<PostOutput>
+                    {
+                        Success = false,
+                        Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message
+                    };
+                }
+            }
+            if (post.Attachments != null)
+            {
+                List<Attachment> atts = new();
+                foreach (var item in post.Attachments)
+                {
+                    atts.Add(new Attachment
+                    {
+                        Link = item,
+                        PostId = dbPost.Id
+                    });
+                }
+
+                _context.Attachments.AddRange(atts);
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    return new ServiceResponse<PostOutput>
+                    {
+                        Success = false,
+                        Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message
+                    };
+                }
+            }
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<PostOutput>
+                {
+                    Success = false,
+                    Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message
+                };
+            }
+            PostOutput output = new()
+            {
+                Text = post.Text,
+                RoomId = dbPost.RoomId,
+                Id = postId,
+                Attachments = await GetAttahcments(dbPost.Id)
+            };
+            return new ServiceResponse<PostOutput>
+            {
+                Data = output
+            };
+        }
+
+        /// <summary>
+        /// Удалить запись
+        /// </summary>
+        /// <param name="postId">Id записи</param>
+        public async Task<ServiceResponse<List<PostOutput>>> DeletePost(int postId)
+        {
+            var dbPost = await _context.Posts.Where(p => p.Id == postId).FirstOrDefaultAsync();
+            if (dbPost == null)
+            {
+                return new ServiceResponse<List<PostOutput>>
+                {
+                    Success = false,
+                    Message = "Запись не найдена."
+                };
+            }
+            if (!IsAdmin(dbPost.RoomId) && !IsModerator(dbPost.RoomId))
+            {
+                return new ServiceResponse<List<PostOutput>>
+                {
+                    Success = false,
+                    Message = "Нет прав на удаление записи."
+                };
+            }
+            _context.Posts.Remove(dbPost);
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<PostOutput>>
+                {
+                    Success = false,
+                    Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message
+                };
+            }
+            return await GetPosts(dbPost.RoomId);
+        }
+
+        #region private
+
+        /// <summary>
+        /// Получение Id авторизованного пользователя
+        /// </summary>
+        private int GetUserId() => int.Parse(_httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+        /// <summary>
+        /// Получить вложения в записи
+        /// </summary>
+        /// <param name="postId">Id записи</param>
+        /// <returns></returns>
+        private async Task<List<string>> GetAttahcments(int postId)
+        {
+            var dbAtts = await _context.Attachments.Where(a => a.PostId == postId).ToListAsync();
+            var atts = new List<string>();
+            if (dbAtts != null)
+            {
+                foreach (var item in dbAtts)
+                {
+                    atts.Add(item.Link);
+                }
+            }
+            return atts;
         }
 
         /// <summary>
@@ -100,187 +346,6 @@ namespace stud_do.API.Services.PostService
             return room.RoleId == 2;
         }
 
-        public async Task<ServiceResponse<List<PostOutput>>> DeletePostAsync(int postId)
-        {
-            var result = new ServiceResponse<List<PostOutput>>();
-            var dbPost = await _context.Posts.Where(p => p.Id == postId).FirstOrDefaultAsync();
-            if (dbPost == null)
-            {
-                result.Success = false;
-                result.Message = "Запись не найдена.";
-                return result;
-            }
-            if (!IsAdmin(dbPost.RoomId) && !IsModerator(dbPost.RoomId))
-            {
-                result.Success = false;
-                result.Message = "Нет прав на удаление записи.";
-                return result;
-            }
-            _context.Posts.Remove(dbPost);
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                result.Success = false;
-                result.Message = ex.Message;
-                return result;
-            }
-            return await GetPostsAsync(dbPost.RoomId);
-        }
-
-        public async Task<ServiceResponse<PostOutput>> GetPostAsync(int postId)
-        {
-            var result = new ServiceResponse<PostOutput>();
-            var post = await _context.Posts.Where(p => p.Id == postId).FirstOrDefaultAsync();
-            if (post == null)
-            {
-                result.Success = false;
-                result.Message = "Запись не найдена.";
-                return result;
-            }
-            var roomUsrs = await _context.UsersRooms.Where(p => p.RoomId == post.RoomId).ToListAsync();
-            if (!roomUsrs.Any(x => x.UserId == GetUserId()))
-            {
-                result.Success = false;
-                result.Message = "Нет доступа к комнате.";
-                return result;
-            }
-            var atts = await GetAttahcments(postId);
-            PostOutput output = new()
-            {
-                Text = post.Text,
-                RoomId = post.RoomId,
-                Id = postId,
-                Attachments = atts
-            };
-            result.Data = output;
-            return result;
-        }
-
-        /// <summary>
-        /// Получить вложения в записи
-        /// </summary>
-        /// <param name="postId">Id записи</param>
-        /// <returns></returns>
-        private async Task<List<string>> GetAttahcments(int postId)
-        {
-            var dbAtts = await _context.Attachments.Where(a => a.PostId == postId).ToListAsync();
-            var atts = new List<string>();
-            if (dbAtts != null)
-            {
-                foreach (var item in dbAtts)
-                {
-                    atts.Add(item.Link);
-                }
-            }
-            return atts;
-        }
-
-        public async Task<ServiceResponse<List<PostOutput>>> GetPostsAsync(int roomId)
-        {
-            var result = new ServiceResponse<List<PostOutput>>();
-            var roomUsrs = await _context.UsersRooms.Where(p => p.RoomId == roomId).ToListAsync();
-            if (!roomUsrs.Any(x => x.UserId == GetUserId()))
-            {
-                result.Success = false;
-                result.Message = "Нет доступа к комнате.";
-                return result;
-            }
-            var posts = await _context.Posts.Where(p => p.RoomId == roomId).ToListAsync();
-            var outputs = new List<PostOutput>();
-            foreach (var post in posts)
-            {
-                PostOutput output = new()
-                {
-                    Text = post.Text,
-                    RoomId = roomId,
-                    Id = post.Id,
-                    Attachments = await GetAttahcments(post.Id)
-                };
-                outputs.Add(output);
-            }
-            result.Data = outputs;
-            return result;
-        }
-
-        public async Task<ServiceResponse<PostOutput>> UpdatePostAsync(PostInput post, int postId)
-        {
-            var result = new ServiceResponse<PostOutput>();
-            var dbPost = await _context.Posts.Where(p => p.Id == postId).FirstOrDefaultAsync();
-            if (dbPost == null)
-            {
-                result.Success = false;
-                result.Message = "Запись не найдена.";
-                return result;
-            }
-            if (!IsAdmin(dbPost.RoomId) && !IsModerator(dbPost.RoomId))
-            {
-                result.Success = false;
-                result.Message = "Нет прав на изменение записи.";
-                return result;
-            }
-            
-            dbPost.Text = post.Text;
-            var dbAtts = await _context.Attachments.Where(a => a.PostId == postId).ToListAsync();
-            if (dbAtts != null)
-            {
-                _context.Attachments.RemoveRange(dbAtts);
-                try
-                {
-                    await _context.SaveChangesAsync();
-                }
-                catch (Exception ex)
-                {
-                    result.Success = false;
-                    result.Message = ex.Message;
-                    return result;
-                }
-            }
-            if (post.Attachments != null)
-            {
-                List<Attachment> atts = new();
-                foreach (var item in post.Attachments)
-                {
-                    atts.Add(new Attachment 
-                    { 
-                        Link = item, 
-                        PostId = dbPost.Id 
-                    });
-                }
-
-                _context.Attachments.AddRange(atts);
-                try
-                {
-                    await _context.SaveChangesAsync();
-                }
-                catch (Exception ex)
-                {
-                    result.Success = false;
-                    result.Message = ex.Message;
-                    return result;
-                }
-            }
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                result.Success = false;
-                result.Message = ex.Message;
-                return result;
-            }
-            PostOutput output = new()
-            {
-                Text = post.Text,
-                RoomId = dbPost.RoomId,
-                Id = postId,
-                Attachments = await GetAttahcments(dbPost.Id)
-            };
-            result.Data = output;
-            return result;
-        }
+        #endregion private
     }
 }

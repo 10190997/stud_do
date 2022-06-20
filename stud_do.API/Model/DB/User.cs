@@ -10,8 +10,10 @@ namespace stud_do.API.Model
         public int Id { get; set; }
         public string Email { get; set; } = string.Empty;
         public string Login { get; set; } = string.Empty;
+
         [JsonIgnore]
         public byte[] PasswordHash { get; set; }
+
         [JsonIgnore]
         public byte[] PasswordSalt { get; set; }
 

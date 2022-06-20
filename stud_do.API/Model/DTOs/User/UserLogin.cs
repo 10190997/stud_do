@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace stud_do.API.Model
+﻿namespace stud_do.API.Model
 {
     public class UserLogin
     {

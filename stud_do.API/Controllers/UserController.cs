@@ -20,6 +20,13 @@ namespace stud_do.API.Controllers
             _userService = userService;
         }
 
+        [HttpGet("get-all")]
+        public async Task<ActionResult<ServiceResponse<UserOutput>>> GetAll()
+        {
+            var result = await _userService.GetAllUsers();
+            return Ok(result);
+        }
+
         [HttpGet("get")]
         public async Task<ActionResult<ServiceResponse<UserOutput>>> Get()
         {
@@ -41,24 +48,17 @@ namespace stud_do.API.Controllers
             return Ok(result);
         }
 
-        [HttpGet("get-all")]
-        public async Task<ActionResult<ServiceResponse<UserOutput>>> GetAll()
-        {
-            var result = await _userService.GetAllUsers();
-            return Ok(result);
-        }
-
-        [HttpGet("search/text={searchText}")]
+        [HttpGet("search/{searchText}")]
         public async Task<ActionResult<ServiceResponse<List<UserOutput>>>> SearchUsers(string searchText)
         {
-            var result = await _userService.SearchUsersAsync(searchText);
+            var result = await _userService.SearchUsers(searchText);
             return Ok(result);
         }
 
-        [HttpGet("searchsuggestions/text={searchText}")]
+        [HttpGet("searchsuggestions/{searchText}")]
         public async Task<ActionResult<ServiceResponse<List<string>>>> GetUserSearchSuggestions(string searchText)
         {
-            var result = await _userService.GetUserSearchSuggestionsAsync(searchText);
+            var result = await _userService.GetUserSearchSuggestions(searchText);
             return Ok(result);
         }
     }

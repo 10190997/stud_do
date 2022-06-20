@@ -2,36 +2,14 @@
 {
     public interface IEventService
     {
-        /// <summary>
-        /// Получить событие
-        /// </summary>
-        /// <param name="eventId">Id события</param>
-        Task<ServiceResponse<EventOutput>> GetEventAsync(int eventId);
+        Task<ServiceResponse<List<EventOutput>>> GetEvents(int scheduleId);
 
-        /// <summary>
-        /// Получить события в расписании
-        /// </summary>
-        /// <param name="scheduleId">Id расписания</param>
-        Task<ServiceResponse<List<EventOutput>>> GetEventsAsync(int scheduleId);
+        Task<ServiceResponse<EventOutput>> CreateEvent(EventInput ev);
 
-        /// <summary>
-        /// Удалить событие
-        /// </summary>
-        /// <param name="eventId">Id события</param>
-        Task<ServiceResponse<List<EventOutput>>> DeleteEventAsync(int eventId);
+        Task<ServiceResponse<EventOutput>> GetEvent(int eventId);
 
-        /// <summary>
-        /// Создать событие и добавить его к расписанию
-        /// </summary>
-        /// <param name="ev">Событие</param>
-        /// <param name="scheduleId">Id расписания</param>
-        Task<ServiceResponse<List<EventOutput>>> AddEventAsync(EventInput ev, int scheduleId);
+        Task<ServiceResponse<EventOutput>> UpdateEvent(int eventId, EventInput ev);
 
-        /// <summary>
-        /// Изменить событие
-        /// </summary>
-        /// <param name="ev">Событие</param>
-        /// <param name="eventId">Id события</param>
-        Task<ServiceResponse<EventOutput>> UpdateEventAsync(EventInput ev, int eventId);
+        Task<ServiceResponse<List<EventOutput>>> DeleteEvent(int eventId);
     }
 }

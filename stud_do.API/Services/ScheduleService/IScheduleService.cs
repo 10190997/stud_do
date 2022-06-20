@@ -2,49 +2,24 @@
 {
     public interface IScheduleService
     {
-        /// <summary>
-        /// Получить расписание 
-        /// </summary>
-        /// <param name="scheduleId">Id расписания</param>
-        Task<ServiceResponse<ScheduleOutput>> GetScheduleAsync(int scheduleId);
+        Task<ServiceResponse<List<ScheduleOutput>>> GetSchedules();
 
-        /// <summary>
-        /// Получить расписания
-        /// </summary>
-        Task<ServiceResponse<List<ScheduleOutput>>> GetSchedulesAsync();
+        Task<ServiceResponse<ScheduleOutput>> CreateSchedule(ScheduleInput schedule);
 
-        /// <summary>
-        /// Удалить расписание
-        /// </summary>
-        /// <param name="scheduleId">Id расписания</param>
+        Task<ServiceResponse<ScheduleOutput>> GetSchedule(int scheduleId);
+
+        Task<ServiceResponse<ScheduleOutput>> UpdateScheduleName(int scheduleId, string scheduleName);
+
+        Task<ServiceResponse<ScheduleOutput>> UpdateScheduleColor(int scheduleId, string color);
+
         Task<ServiceResponse<List<ScheduleOutput>>> DeleteSchedule(int scheduleId);
 
-        /// <summary>
-        /// Создать расписание
-        /// </summary>
-        /// <param name="schedule">Расписание</param>
-        Task<ServiceResponse<List<ScheduleOutput>>> CreateScheduleAsync(ScheduleInput schedule);
+        Task<ServiceResponse<ScheduleOutput>> ShowSchedule(int scheduleId);
 
-        /// <summary>
-        /// Редактировать расписание
-        /// </summary>
-        /// <param name="scheduleName">Новое название</param>
-        /// <param name="scheduleId">Id расписания</param>
-        Task<ServiceResponse<ScheduleOutput>> UpdateScheduleAsync(string scheduleName, int scheduleId);
+        Task<ServiceResponse<ScheduleOutput>> HideSchedule(int scheduleId);
 
-        /// <summary>
-        /// Изменение ВНЕШНЕГО ВИДА расписания его пользователем
-        /// </summary>
-        /// <param name="scheduleId">Id расписания</param>
-        /// <param name="color">Новый цвет</param>
-        /// <param name="visibility">Отображение</param>
-        Task<ServiceResponse<ScheduleOutput>> EditScheduleAsync(int scheduleId, string color, bool visibility);
+        Task<ServiceResponse<ScheduleOutput>> AddUserToSchedule(int scheduleId, int userId);
 
-        /// <summary>
-        /// Добавить пользователю расписание
-        /// </summary>
-        /// <param name="scheduleId">Id расписания</param>
-        /// <param name="userId">Id пользователя</param>
-        Task<ServiceResponse<ScheduleOutput>> AddUserToScheduleAsync(int scheduleId, int userId);
+        Task<ServiceResponse<ScheduleOutput>> RemoveUserFromSchedule(int scheduleId, int userId);
     }
 }

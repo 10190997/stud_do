@@ -2,36 +2,14 @@
 {
     public interface IPostService
     {
-        /// <summary>
-        /// Получить запись
-        /// </summary>
-        /// <param name="postId">Id записи</param>
-        Task<ServiceResponse<PostOutput>> GetPostAsync(int postId);
+        Task<ServiceResponse<List<PostOutput>>> GetPosts(int roomId);
 
-        /// <summary>
-        /// Получить все записи в комнате
-        /// </summary>
-        /// <param name="roomId">Id комнаты</param>
-        Task<ServiceResponse<List<PostOutput>>> GetPostsAsync(int roomId);
+        Task<ServiceResponse<PostOutput>> CreatePost(PostInput post);
 
-        /// <summary>
-        /// Удалить запись
-        /// </summary>
-        /// <param name="postId">Id записи</param>
-        Task<ServiceResponse<List<PostOutput>>> DeletePostAsync(int postId);
+        Task<ServiceResponse<PostOutput>> GetPost(int postId);
 
-        /// <summary>
-        /// Создать запись и добавить ее в комнату
-        /// </summary>
-        /// <param name="post">Запись</param>
-        /// <param name="roomId">Id комнаты</param>
-        Task<ServiceResponse<List<PostOutput>>> AddPostAsync(PostInput post, int roomId);
+        Task<ServiceResponse<PostOutput>> UpdatePost(int postId, PostInput post);
 
-        /// <summary>
-        /// Редактировать запись
-        /// </summary>
-        /// <param name="post">Запись</param>
-        /// <param name="postId">Id записи</param>
-        Task<ServiceResponse<PostOutput>> UpdatePostAsync(PostInput post, int postId);
+        Task<ServiceResponse<List<PostOutput>>> DeletePost(int postId);
     }
 }

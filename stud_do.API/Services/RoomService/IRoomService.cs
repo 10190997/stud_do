@@ -2,59 +2,26 @@
 {
     public interface IRoomService
     {
-        /// <summary>
-        /// Получить комнату
-        /// </summary>
-        /// <param name="roomId">Id комнаты</param>
-        Task<ServiceResponse<RoomOutput>> GetRoomAsync(int roomId);
+        Task<ServiceResponse<List<RoomOutput>>> GetRooms();
 
-        /// <summary>
-        /// Вывести список комнат, доступных пользователю
-        /// </summary>
-        Task<ServiceResponse<List<RoomOutput>>> GetRoomsAsync();
+        Task<ServiceResponse<RoomOutput>> CreateRoom(string name);
 
-        /// <summary>
-        /// Получить список комнат по названию
-        /// </summary>
-        /// <param name="searchText">Текст поиска</param>
-        Task<ServiceResponse<List<RoomOutput>>> SearchRoomsAsync(string searchText);
+        Task<ServiceResponse<RoomOutput>> GetRoom(int roomId);
 
-        /// <summary>
-        /// Получить поисковые подсказки
-        /// </summary>
-        /// <param name="searchText">Текст поиска</param>
-        Task<ServiceResponse<List<string>>> GetRoomSearchSuggestionsAsync(string searchText);
+        Task<ServiceResponse<RoomOutput>> UpdateRoom(int roomId, string newName);
 
-        /// <summary>
-        /// Удалить комнату
-        /// </summary>
-        /// <param name="roomId">Id комнаты</param>
         Task<ServiceResponse<List<RoomOutput>>> DeleteRoom(int roomId);
 
-        /// <summary>
-        /// Создать комнату
-        /// </summary>
-        /// <param name="name">Название</param>
-        Task<ServiceResponse<List<RoomOutput>>> AddRoomAsync(string name);
+        Task<ServiceResponse<List<RoomOutput>>> SearchRooms(string searchText);
 
-        /// <summary>
-        /// Изменить комнату
-        /// </summary>
-        /// <param name="room">Комната</param>
-        Task<ServiceResponse<RoomOutput>> UpdateRoomAsync(string newName, int roomId);
+        Task<ServiceResponse<List<string>>> GetRoomSearchSuggestions(string searchText);
 
-        /// <summary>
-        /// Добавить участника комнаты
-        /// </summary>
-        /// <param name="roomId"></param>
-        /// <param name="userId"></param>
-        Task<ServiceResponse<RoomOutput>> AddMemberAsync(int roomId, int userId);
+        Task<ServiceResponse<RoomOutput>> AddMember(int roomId, int userId);
 
-        /// <summary>
-        /// Назначить редактора комнаты
-        /// </summary>
-        /// <param name="roomId"></param>
-        /// <param name="userId"></param>
-        Task<ServiceResponse<RoomOutput>> AddModeratorAsync(int roomId, int userId);
+        Task<ServiceResponse<RoomOutput>> RemoveMember(int roomId, int userId);
+
+        Task<ServiceResponse<RoomOutput>> AddModerator(int roomId, int userId);
+
+        Task<ServiceResponse<RoomOutput>> RemoveModerator(int roomId, int userId);
     }
 }

@@ -22,14 +22,35 @@ namespace stud_do.API.Controllers
         [HttpGet("get-all")]
         public async Task<ActionResult<ServiceResponse<List<ScheduleOutput>>>> GetSchedules()
         {
-            var result = await _scheduleService.GetSchedulesAsync();
+            var result = await _scheduleService.GetSchedules();
             return Ok(result);
         }
 
-        [HttpGet("get/schedule={scheduleId}")]
+        [HttpPost("create")]
+        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> CreateSchedule(ScheduleInput schedule)
+        {
+            var result = await _scheduleService.CreateSchedule(schedule);
+            return Ok(result);
+        }
+
+        [HttpGet("get/{scheduleId}")]
         public async Task<ActionResult<ScheduleOutput>> GetSchedule(int scheduleId)
         {
-            var result = await _scheduleService.GetScheduleAsync(scheduleId);
+            var result = await _scheduleService.GetSchedule(scheduleId);
+            return Ok(result);
+        }
+
+        [HttpPost("update-name/{scheduleId}")]
+        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> UpdateScheduleName(int scheduleId, string scheduleName)
+        {
+            var result = await _scheduleService.UpdateScheduleName(scheduleId, scheduleName);
+            return Ok(result);
+        }
+
+        [HttpPost("update-color/{scheduleId}")]
+        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> UpdateScheduleColor(int scheduleId, string color)
+        {
+            var result = await _scheduleService.UpdateScheduleColor(scheduleId, color);
             return Ok(result);
         }
 
@@ -40,31 +61,31 @@ namespace stud_do.API.Controllers
             return Ok(result);
         }
 
-        [HttpPost("create")]
-        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> CreateSchedule(ScheduleInput schedule)
+        [HttpPost("show/{scheduleId}")]
+        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> ShowSchedule(int scheduleId)
         {
-            var result = await _scheduleService.CreateScheduleAsync(schedule);
+            var result = await _scheduleService.ShowSchedule(scheduleId);
             return Ok(result);
         }
 
-        [HttpPost("creator-update/schedule={scheduleId}")]
-        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> UpdateSchedule(string scheduleName, int scheduleId)
+        [HttpPost("hide/{scheduleId}")]
+        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> HideSchedule(int scheduleId)
         {
-            var result = await _scheduleService.UpdateScheduleAsync(scheduleName, scheduleId);
+            var result = await _scheduleService.HideSchedule(scheduleId);
             return Ok(result);
         }
 
-        [HttpPost("update/schedule={scheduleId}")]
-        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> EditSchedule(int scheduleId, string color, bool visibility)
+        [HttpPost("add-user/{scheduleId}")]
+        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> AddUserToSchedule(int scheduleId, int userId)
         {
-            var result = await _scheduleService.EditScheduleAsync(scheduleId, color, visibility);
+            var result = await _scheduleService.AddUserToSchedule(scheduleId, userId);
             return Ok(result);
         }
 
-        [HttpPost("add-user/schedule={scheduleId}/user={userId}")]
-        public async Task<ActionResult<ServiceResponse<List<ScheduleOutput>>>> AddUserToSchedule(int scheduleId, int userId)
+        [HttpPost("remove-user/{scheduleId}")]
+        public async Task<ActionResult<ServiceResponse<ScheduleOutput>>> RemoveUserFromSchedule(int scheduleId, int userId)
         {
-            var result = await _scheduleService.AddUserToScheduleAsync(scheduleId, userId);
+            var result = await _scheduleService.RemoveUserFromSchedule(scheduleId, userId);
             return Ok(result);
         }
     }

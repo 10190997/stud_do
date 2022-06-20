@@ -22,35 +22,35 @@ namespace stud_do.API.Controllers
         [HttpGet("get-all/schedule={scheduleId}")]
         public async Task<ActionResult<ServiceResponse<List<EventOutput>>>> GetEvents(int scheduleId)
         {
-            var result = await _eventService.GetEventsAsync(scheduleId);
+            var result = await _eventService.GetEvents(scheduleId);
             return Ok(result);
         }
 
-        [HttpGet("get/event={eventId}")]
-        public async Task<ActionResult<ServiceResponse<List<EventOutput>>>> GetEvent(int eventId)
+        [HttpPost("create")]
+        public async Task<ActionResult<ServiceResponse<EventOutput>>> CreateEvent(EventInput ev)
         {
-            var result = await _eventService.GetEventAsync(eventId);
+            var result = await _eventService.CreateEvent(ev);
             return Ok(result);
         }
 
-        [HttpPost("delete/event={eventId}")]
+        [HttpGet("get/{eventId}")]
+        public async Task<ActionResult<ServiceResponse<EventOutput>>> GetEvent(int eventId)
+        {
+            var result = await _eventService.GetEvent(eventId);
+            return Ok(result);
+        }
+
+        [HttpPost("update/{eventId}")]
+        public async Task<ActionResult<ServiceResponse<EventOutput>>> UpdateEvent(int eventId, EventInput ev)
+        {
+            var result = await _eventService.UpdateEvent(eventId, ev);
+            return Ok(result);
+        }
+
+        [HttpPost("delete/{eventId}")]
         public async Task<ActionResult<ServiceResponse<List<EventOutput>>>> DeleteEvent(int eventId)
         {
-            var result = await _eventService.DeleteEventAsync(eventId);
-            return Ok(result);
-        }
-
-        [HttpPost("add-event/schedule={scheduleId}")]
-        public async Task<ActionResult<ServiceResponse<List<EventOutput>>>> AddEvent(EventInput ev, int scheduleId)
-        {
-            var result = await _eventService.AddEventAsync(ev, scheduleId);
-            return Ok(result);
-        }
-
-        [HttpPost("update/event={eventId}")]
-        public async Task<ActionResult<ServiceResponse<List<EventOutput>>>> UpdateEvent(EventInput ev, int eventId)
-        {
-            var result = await _eventService.UpdateEventAsync(ev, eventId);
+            var result = await _eventService.DeleteEvent(eventId);
             return Ok(result);
         }
     }
